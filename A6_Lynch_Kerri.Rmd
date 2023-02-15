@@ -1,0 +1,82 @@
+<https://github.com/klynch416>
+
+```{r}
+library(dplyr)
+library(BiocManager)
+install(c("sangerseqR", "annotate"))
+library(sangerseqR)
+library(annotate)
+library(ggplot2)
+```
+
+Import CSV
+```{r}
+
+Sequences <- read.csv("./Sequences.csv")
+
+```
+
+Print out each sequence.
+*Sequences*
+```{r}
+
+Sequences$Sequence[1]
+Sequences$Sequence[2]
+Sequences$Sequence[3]
+
+```
+
+*Number of each nucleotide per sequence*
+```{r}
+
+Nucleotide <- matrix(nrow = 3, ncol = 5)
+
+for(i in 1:3){
+Nucleotide[i,1] <- i
+Nucleotide[i,2] <- lengths(regmatches(Sequences$Sequence[i], gregexpr("A", Sequences$Sequence[i])))
+Nucleotide[i,3] <- lengths(regmatches(Sequences$Sequence[i], gregexpr("T", Sequences$Sequence[i])))
+Nucleotide[i,4] <- lengths(regmatches(Sequences$Sequence[i], gregexpr("G", Sequences$Sequence[i])))
+Nucleotide[i,5] <- lengths(regmatches(Sequences$Sequence[i], gregexpr("C", Sequences$Sequence[i])))
+}
+
+colnames(Nucleotide) <- c("Sequence", "A", "T", "G", "C")
+Nucleotide <- as.data.frame(Nucleotide)
+
+print(Nucleotide)
+
+```
+
+*GC content*
+```{r}
+
+Nucleotide <- Nucleotide %>% mutate(GC_Content = round(((G+C)/(A+T+G+C))*100))
+
+Sequences$Name <- c("HQ433692.1","HQ433694.1","HQ433691.1")
+
+GC_Content <- data.frame("Sequence ID" = Sequences$Name, "GC Content" = paste0(Nucleotide$GC_Content,"%"))
+
+print(GC_Content)
+
+```
+
+*Image and wikipedia page for Borrelia burgdorferi*
+
+<https://en.wikipedia.org/wiki/Borrelia_burgdorferi>
+
+![Borrelia burgdorferi](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Borrelia_burgdorferi_%28CDC-PHIL_-6631%29_lores.jpg/1200px-Borrelia_burgdorferi_%28CDC-PHIL_-6631%29_lores.jpg)
+
+## Part 2
+Write reproducible R code to search for the closest matching sequence on Genbank and generate an alignment to confirm the degree of similarity. 
+
+*Blast and alignment score*
+```{r}
+
+Unkseq <- "GCCTGATGGAGGGGGATAACTACTGGAAACGGTAGCTAATACCGCATGACCTCGCAAGAGCAAAGTGGGGGACCTTAGGGCCTCACGCCATCGGATGAACCCAGATGGGATTAGCTAGTAGGTGGGGTAATGGCTCACCTAGGCGACGATCCCTAGCTGGTCTGAGAGGATGACCAGCCACACTGGAACTGAGACACGGTCCAGACTCCTACGGGAGGCAGCAGTGGGGAATATTGCACAATGGGCGCAA"
+
+dataseq <- blastSequences(x = Unkseq, timeout = 200, hitListSize = 10, as = 'data.frame')
+uniqdata <- dataseq %>% distinct(Hit_id, .keep_all=TRUE)
+print(paste0(uniqdata$Hit_def,": ", uniqdata$Hsp_score))
+```
+
+It is another organism, specifically the bacterium *Yersinia pestis*. *Yersinia pestis*, also known as the Black Death, is a gram-negative, non-motile, coccobacillus bacterium without spores and spread through humans via the Oriental rat flea. Patients develop fever, chills, extreme weakness, abdominal pain, shock, and possibly bleeding into the skin and other organs. Skin and other tissues may turn black and die, especially on fingers, toes, and the nose. *Yersinia pestis* can be treated with intravenous or oral antimicrobials for 10 to 14 days.
+
